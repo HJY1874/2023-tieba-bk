@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.name }} - 分类详情 - 百科知识平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 左侧内容 -->
+    <div class="col-lg-8">
+        <!-- 分类信息 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-folder"></i> {{ category.name }}
+                    </h4>
+                    <span class="badge bg-light text-dark fs-6">{{ category.article_count }} 个词条</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if category.description %}
+                <div class="mb-3">
+                    <h6><i class="fas fa-info-circle"></i> 分类描述</h6>
+                    <p class="mb-0">{{ category.description }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <h5 class="text-primary">{{ category.article_count }}</h5>
+                            <small class="text-muted">词条总数</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <h5 class="text-success">{{ total_views }}</h5>
+                            <small class="text-muted">总浏览量</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <h5 class="text-info">{{ total_likes }}</h5>
+                            <small class="text-muted">总点赞数</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> 创建时间: {{ category.created_at|date:"Y-m-d H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 词条列表 -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-list"></i> 词条列表</h5>
+            </div>
+            <div class="card-body">
+                {% if articles %}
+                <div class="list-group list-group-flush">
+                    {% for article in articles %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <a href="{% url 'baike_app:article_detail' article.slug %}" 
+                                       class="text-decoration-none">
+                                        {{ article.title }}
+                                    </a>
+                                </h6>
+                                <p class="mb-1 text-muted small">
+                                    {{ article.summary|truncatewords:30 }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> {{ article.author.username }}
+                                    </small>
+                                    <div>
+                                        <small class="text-muted me-3">
+                                            <i class="fas fa-eye"></i> {{ article.view_count }}
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="fas fa-heart"></i> {{ article.like_count }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 分页 -->
+                {% if articles.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if articles.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.previous_page_number }}">上一页</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for i in articles.paginator.page_range %}
+                            {% if articles.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if articles.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.next_page_number }}">下一页</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">暂无词条</h5>
+                    <p class="text-muted">该分类下还没有词条，快来创建第一个词条吧！</p>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'baike_app:article_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 创建词条
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧边栏 -->
+    <div class="col-lg-4">
+        <!-- 热门词条 -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-fire"></i> 热门词条</h6>
+            </div>
+            <div class="card-body">
+                {% if popular_articles %}
+                <div class="list-group list-group-flush">
+                    {% for article in popular_articles %}
+                    <a href="{% url 'baike_app:article_detail' article.slug %}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ article.title|truncatewords:5 }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ article.view_count }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">暂无热门词条</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 最新词条 -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-clock"></i> 最新词条</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_articles %}
+                <div class="list-group list-group-flush">
+                    {% for article in recent_articles %}
+                    <a href="{% url 'baike_app:article_detail' article.slug %}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ article.title|truncatewords:5 }}</span>
+                            <small class="text-muted">{{ article.created_at|timesince }}前</small>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">暂无最新词条</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 快速导航 -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-compass"></i> 快速导航</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'baike_app:category_list' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-tags"></i> 返回分类列表
+                    </a>
+                    <a href="{% url 'baike_app:article_list' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-list"></i> 查看所有词条
+                    </a>
+                    <a href="{% url 'baike_app:home' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-home"></i> 返回首页
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-item {
+    padding: 10px 0;
+}
+
+.stat-item h5 {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

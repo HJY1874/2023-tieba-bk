@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ article.title }} - 百科知识平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 左侧内容 -->
+    <div class="col-lg-8">
+        <!-- 词条标题和操作 -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="display-5">{{ article.title }}</h1>
+            <div class="btn-group">
+                {% if user.is_authenticated and user == article.author or user.is_superuser %}
+                <a href="{% url 'baike_app:article_edit' article.slug %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-edit"></i> 编辑
+                </a>
+                <a href="{% url 'baike_app:article_delete' article.slug %}" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-trash"></i> 删除
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 词条信息 -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> 作者: {{ article.author.username }}
+                        </small>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> 创建时间: {{ article.created_at|date:"Y-m-d H:i" }}
+                        </small>
+                    </div>
+                </div>
+
+                {% if article.category %}
+                <div class="mb-3">
+                    <span class="badge category-badge">
+                        <i class="fas fa-tag"></i> {{ article.category.name }}
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if article.summary %}
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> 摘要</h6>
+                    <p class="mb-0">{{ article.summary }}</p>
+                </div>
+                {% endif %}
+
+                <!-- 统计信息 -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-light text-dark me-2">
+                            <i class="fas fa-eye"></i> {{ article.view_count }} 浏览
+                        </span>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-heart"></i> {{ article.like_count }} 点赞
+                        </span>
+                    </div>
+                    
+                    <!-- 点赞按钮 -->
+                    {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'baike_app:article_like' article.slug %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn like-btn {% if user_has_liked %}liked{% endif %}">
+                            {% if user_has_liked %}
+                            <i class="fas fa-heart"></i> 已点赞
+                            {% else %}
+                            <i class="far fa-heart"></i> 点赞
+                            {% endif %}
+                        </button>
+                    </form>
+                    {% else %}
+                    <a href="{% url 'admin:login' %}" class="btn like-btn">
+                        <i class="far fa-heart"></i> 登录后点赞
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 词条内容 -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-file-alt"></i> 词条内容</h5>
+            </div>
+            <div class="card-body">
+                <div class="article-content">
+                    {{ article.content|linebreaks }}
+                </div>
+            </div>
+        </div>
+
+        <!-- 评论区域 -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-comments"></i> 评论 ({{ comments.count }})</h5>
+            </div>
+            <div class="card-body">
+                <!-- 评论表单 -->
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'baike_app:add_comment' article.slug %}" class="mb-4">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_content" class="form-label">发表评论</label>
+                        {{ comment_form.content }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">提交评论</button>
+                </form>
+                {% else %}
+                <div class="alert alert-info">
+                    <a href="{% url 'admin:login' %}" class="alert-link">登录</a> 后即可发表评论
+                </div>
+                {% endif %}
+
+                <!-- 评论列表 -->
+                {% if comments %}
+                <div class="comment-section">
+                    {% for comment in comments %}
+                    <div class="comment">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>{{ comment.author.username }}</strong>
+                            <small class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</small>
+                        </div>
+                        <p class="mb-0">{{ comment.content }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">暂无评论，快来发表第一条评论吧！</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧边栏 -->
+    <div class="col-lg-4">
+        <!-- 作者信息 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-user"></i> 作者信息</h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-user-circle fa-3x text-muted"></i>
+                </div>
+                <h5>{{ article.author.username }}</h5>
+                <p class="text-muted">注册时间: {{ article.author.date_joined|date:"Y-m-d" }}</p>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary btn-sm">查看该作者更多词条</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 相关词条 -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-link"></i> 相关词条</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <!-- 这里可以添加相关词条逻辑 -->
+                    <a href="#" class="list-group-item list-group-item-action">
+                        Python编程语言
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        Django框架介绍
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        Web开发基础
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速导航 -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-compass"></i> 快速导航</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'baike_app:article_list' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-list"></i> 返回词条列表
+                    </a>
+                    <a href="{% url 'baike_app:home' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-home"></i> 返回首页
+                    </a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'baike_app:article_create' %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-plus"></i> 创建新词条
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 简单的内容格式化
+function formatContent() {
+    const content = document.querySelector('.article-content');
+    if (content) {
+        // 自动为内容中的标题添加样式
+        const text = content.innerHTML;
+        // 这里可以添加更多的内容格式化逻辑
+    }
+}
+
+document.addEventListener('DOMContentLoaded', formatContent);
+</script>
+{% endblock %}

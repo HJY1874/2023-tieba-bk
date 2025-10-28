@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if form.instance.pk %}编辑词条 - {{ form.instance.title }}{% else %}创建新词条{% endif %} - 百科知识平台
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %}"></i>
+                    {% if form.instance.pk %}编辑词条{% else %}创建新词条{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> 表单错误</h6>
+                        <ul class="mb-0">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- 标题字段 -->
+                    <div class="mb-3">
+                        <label for="id_title" class="form-label">
+                            <i class="fas fa-heading"></i> 词条标题 *
+                        </label>
+                        {{ form.title }}
+                        <div class="form-text">{{ form.title.help_text }}</div>
+                    </div>
+
+                    <!-- URL标识字段 -->
+                    <div class="mb-3">
+                        <label for="id_slug" class="form-label">
+                            <i class="fas fa-link"></i> URL标识 *
+                        </label>
+                        {{ form.slug }}
+                        <div class="form-text">{{ form.slug.help_text }}</div>
+                    </div>
+
+                    <!-- 分类字段 -->
+                    <div class="mb-3">
+                        <label for="id_category" class="form-label">
+                            <i class="fas fa-tag"></i> 分类
+                        </label>
+                        {{ form.category }}
+                        <div class="form-text">{{ form.category.help_text }}</div>
+                    </div>
+
+                    <!-- 摘要字段 -->
+                    <div class="mb-3">
+                        <label for="id_summary" class="form-label">
+                            <i class="fas fa-info-circle"></i> 摘要
+                        </label>
+                        {{ form.summary }}
+                        <div class="form-text">{{ form.summary.help_text }}</div>
+                    </div>
+
+                    <!-- 内容字段 -->
+                    <div class="mb-3">
+                        <label for="id_content" class="form-label">
+                            <i class="fas fa-file-alt"></i> 词条内容 *
+                        </label>
+                        {{ form.content }}
+                        <div class="form-text">{{ form.content.help_text }}</div>
+                    </div>
+
+                    <!-- 标签字段 -->
+                    <div class="mb-3">
+                        <label for="id_tags" class="form-label">
+                            <i class="fas fa-tags"></i> 标签
+                        </label>
+                        {{ form.tags }}
+                        <div class="form-text">{{ form.tags.help_text }}</div>
+                    </div>
+
+                    <!-- 状态字段 -->
+                    <div class="mb-3">
+                        <label for="id_status" class="form-label">
+                            <i class="fas fa-toggle-on"></i> 状态
+                        </label>
+                        {{ form.status }}
+                        <div class="form-text">{{ form.status.help_text }}</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% if form.instance.pk %}{% url 'baike_app:article_detail' form.instance.slug %}{% else %}{% url 'baike_app:article_list' %}{% endif %}" 
+                           class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-{% if form.instance.pk %}save{% else %}plus{% endif %}"></i>
+                            {% if form.instance.pk %}保存修改{% else %}创建词条{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 编辑指南 -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> 编辑指南</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>请确保词条标题简洁明了，能够准确反映内容</li>
+                    <li>URL标识应该使用英文或数字，避免使用中文和特殊字符</li>
+                    <li>摘要部分应该简明扼要地概括词条的主要内容</li>
+                    <li>内容部分请使用清晰的结构，可以适当使用段落和标题</li>
+                    <li>选择合适的分类和标签，便于其他用户查找</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 自动生成slug
+function generateSlug() {
+    const titleInput = document.getElementById('id_title');
+    const slugInput = document.getElementById('id_slug');
+    
+    if (titleInput && slugInput && !slugInput.value) {
+        titleInput.addEventListener('blur', function() {
+            const title = this.value;
+            if (title) {
+                // 简单的slug生成逻辑
+                const slug = title
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-');
+                slugInput.value = slug;
+            }
+        });
+    }
+}
+
+// 字符计数
+function setupCharacterCounters() {
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(textarea => {
+        const counter = document.createElement('div');
+        counter.className = 'form-text text-end';
+        counter.innerHTML = `当前字数: <span class="char-count">${textarea.value.length}</span>`;
+        
+        textarea.parentNode.appendChild(counter);
+        
+        textarea.addEventListener('input', function() {
+            const count = this.value.length;
+            counter.querySelector('.char-count').textContent = count;
+            
+            // 添加字数限制提示
+            if (count > 5000) {
+                counter.classList.add('text-danger');
+            } else {
+                counter.classList.remove('text-danger');
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    generateSlug();
+    setupCharacterCounters();
+});
+</script>
+{% endblock %}
